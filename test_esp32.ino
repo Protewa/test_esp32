@@ -12,12 +12,13 @@ const int freq = 1000;
 const int resolutie = 12;
 
 // Variabelen voor berekening
-int setpoint = 0;
+float setpoint = 0;
 const float weerstand = 1.49;
 
 // Variabelen voor Non-blocking Debounce
 unsigned long laatsteKnopCheck = 0;
 const int debounceTijd = 150; 
+float pwm_calc = 0.0;
 
 void setup() {
   Serial.begin(115200);
@@ -40,7 +41,7 @@ void loop() {
   // --- 1. Seriële Input Lezen ---
   if (Serial.available() > 0) {
     // Lees het getal dat in de seriële monitor is getypt
-    int nieuweSetpoint = Serial.parseInt();
+    float nieuweSetpoint = Serial.parseFloat();
     
     // Alleen aanpassen als er echt iets getypt is (parseInt geeft 0 bij timeout/fout)
     // We checken ook op het newline karakter om 'lege' 0-metingen te filteren
@@ -69,14 +70,14 @@ void loop() {
   }
 
   // --- 3. Metingen en Berekeningen ---
-  int raw_spanning = analogRead(SPANNING_PIN);
+  // int raw_spanning = analogRead(SPANNING_PIN);
+  int raw_spanning = 12;
   int pwm_eind = 0;
 
-  if (setpoint > 0 && raw_spanning > 100) {
+  
     // Wet van Ohm berekening: PWM = (Max_PWM * I_gewenst * R) / V_bron
-    float pwm_calc = (4095.0f * (float)setpoint * weerstand) / (float)raw_spanning;
-    pwm_eind = constrain(static_cast<int>(round(pwm_calc)), 0, 4095);
-  }
+  pwm_calc = (4095 * setpoint * weerstand) / 12;
+  pwm_eind = constrain(static_cast<int>(round(pwm_calc)), 0, 4095);  
 
   // --- 4. Uitvoer ---
   ledcWrite(PWM_PIN, pwm_eind);
@@ -84,7 +85,7 @@ void loop() {
   // --- 5. Seriële Monitor Log ---
   static unsigned long laatsteLog = 0;
   if (millis() - laatsteLog > 500) {
-    Serial.printf("Setpoint: %d | ADC Spanning: %d | PWM Output: %d\n", setpoint, raw_spanning, pwm_eind);
+    Serial.printf("Setpoint: %.1f | ADC Spanning: %d | pwm_calc : %.2f | PWM Output: %d\n", setpoint, raw_spanning, pwm_calc, pwm_eind);
     laatsteLog = millis();
   }
 }
